@@ -28,7 +28,6 @@ const allowCors =
 
 module.exports = allowCors(async (req: VercelRequest, res: VercelResponse) => {
   try {
-
     if (!GOOGLE_API_KEY) {
       throw 'Error, GOOGLE_API_KEY is empty';
     }
@@ -37,14 +36,26 @@ module.exports = allowCors(async (req: VercelRequest, res: VercelResponse) => {
       throw 'Error, SPREADSHEET_ID is empty';
     }
 
+    if (!req.query?.email && typeof req.query?.email === 'string') {
+      throw 'Упс... Email введён неправильно';
+    }
+
     const auth = google.auth.fromAPIKey(GOOGLE_API_KEY);
     const sheets = google.sheets({ version: 'v4', auth });
-    sheets.spreadsheets.values.append({
+    await sheets.spreadsheets.values.append({
       spreadsheetId: SPREADSHEET_ID,
       range: 'A:A',
+      valueInputOption: "USER_ENTERED",
+      requestBody: {
+        "values": [
+          [
+            req.query?.email
+          ]
+        ]
+      }
     });
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.json({
       error: true
     })
